@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OmniPulse Reactive AI — Cross-Chain Liquidation Shield & Yield Automator (Reactive Omni Buildathon)</title>
+  <style>
+    :root {
+      --bg-dark: #070b14;
+      --bg-card: #0f172a;
+      --bg-panel: #1e293b;
+      --reactive-cyan: #06b6d4;
+      --reactive-blue: #3b82f6;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --crimson: #ef4444;
+      --purple: #8b5cf6;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border: #263654;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-main);
+      line-height: 1.5;
+      padding-bottom: 48px;
+    }
+    header {
+      background: linear-gradient(135deg, #071324 0%, #0c2c47 60%, #1c123c 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 20px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .brand { display: flex; align-items: center; gap: 14px; }
+    .brand-icon {
+      width: 46px; height: 46px; border-radius: 12px;
+      background: linear-gradient(135deg, var(--reactive-cyan), var(--purple));
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 20px; color: #fff;
+      box-shadow: 0 0 18px rgba(6, 182, 212, 0.45);
+    }
+    .brand h1 { font-size: 22px; font-weight: 800; }
+    .brand p { font-size: 13px; color: var(--text-muted); }
+    .track-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+    .pill {
+      padding: 5px 11px; border-radius: 999px; font-size: 11.5px; font-weight: 600;
+      background: rgba(6, 182, 212, 0.14); border: 1px solid var(--reactive-cyan);
+      color: #67e8f9;
+    }
+    .pill.t2 { background: rgba(16, 185, 129, 0.14); border-color: var(--emerald); color: #6ee7b7; }
+    .pill.t3 { background: rgba(139, 92, 246, 0.16); border-color: var(--purple); color: #ddd6fe; }
+    .container { max-width: 1440px; margin: 24px auto; padding: 0 24px; }
+    .kpi-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px; margin-bottom: 24px;
+    }
+    .kpi-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 16px 20px;
+    }
+    .kpi-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); }
+    .kpi-val { font-size: 28px; font-weight: 800; margin-top: 4px; color: var(--reactive-cyan); }
+    .kpi-sub { font-size: 12px; color: var(--emerald); margin-top: 2px; }
+    .control-bar {
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 12px; background: var(--bg-card);
+      border: 1px solid var(--border); border-radius: 12px; padding: 14px 20px;
+      margin-bottom: 24px;
+    }
+    .btn-group { display: flex; gap: 10px; flex-wrap: wrap; }
+    button {
+      cursor: pointer; border: 1px solid var(--border); background: var(--bg-panel);
+      color: var(--text-main); padding: 9px 16px; border-radius: 8px;
+      font-size: 13px; font-weight: 600; transition: all 0.15s ease;
+    }
+    button:hover { border-color: var(--reactive-cyan); }
+    button.active {
+      background: linear-gradient(135deg, #0891b2, #4f46e5);
+      border-color: var(--reactive-cyan); color: #fff;
+    }
+    .grid-2 { display: grid; grid-template-columns: 1.2fr 1fr; gap: 20px; }
+    @media (max-width: 1080px) { .grid-2 { grid-template-columns: 1fr; } }
+    .panel {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px; margin-bottom: 20px;
+    }
+    .panel-header {
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 14px;
+    }
+    .panel-title { font-size: 15.5px; font-weight: 700; }
+    .flow-svg {
+      width: 100%; height: 270px; background: #060a12;
+      border: 1px solid #1e2d4a; border-radius: 10px;
+    }
+    pre {
+      background: #05080f; border: 1px solid #1e293b; border-radius: 8px;
+      padding: 12px; font-family: "JetBrains Mono", Consolas, monospace;
+      font-size: 12px; color: #e2e8f0; overflow-x: auto; white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="brand-icon">⚡</div>
+      <div>
+        <h1>OmniPulse Reactive AI — Cross-Chain Liquidation Shield &amp; Yield Rebalancer</h1>
+        <p>Built on Reactive Network (IReactive + AbstractReactive + react(LogRecord) + Cross-Chain Callback) — DoraHacks</p>
+      </div>
+    </div>
+    <div class="track-pills">
+      <span class="pill">Track 1: Every Second Counts ($2,250)</span>
+      <span class="pill t2">Track 2: Set It and Forget It ($2,250)</span>
+      <span class="pill t3">Track 3: Reactive Meets AI ($1,000)</span>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">Reactive VM Callback Latency</div>
+        <div class="kpi-val" id="kpi-latency">420ms</div>
+        <div class="kpi-sub">Sub-Second Cross-Chain Liquidation Shield</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">AI Dynamic Safety Buffer</div>
+        <div class="kpi-val" id="kpi-buffer" style="color: var(--purple);">+2,264 bps</div>
+        <div class="kpi-sub" id="kpi-regime">Regime: FLASH_CRASH_HIGH_RISK (9,054 bps)</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Protected Vault Collateral</div>
+        <div class="kpi-val" style="color: var(--emerald);">$120,000</div>
+        <div class="kpi-sub">$12,000 Liquidation Penalty Prevented</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Autonomous Yield Boost</div>
+        <div class="kpi-val" style="color: var(--amber);">+2.45% APY</div>
+        <div class="kpi-sub">Zero Manual Signings or Cron Keepers</div>
+      </div>
+    </div>
+
+    <div class="control-bar">
+      <div class="btn-group">
+        <button id="btn-t1" class="active" onclick="selectTrack('T1')">
+          Track 1: Every Second Counts (Emergency Liquidation Shield Callback)
+        </button>
+        <button id="btn-t2" onclick="selectTrack('T2')">
+          Track 2: Set It and Forget It (Autonomous Cross-Chain Yield Rebalance)
+        </button>
+        <button id="btn-t3" onclick="selectTrack('T3')">
+          Track 3: Reactive Meets AI (Volatility Regime &amp; Dynamic Buffer Update)
+        </button>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">🌐 Reactive Network Cross-Chain Event &amp; Callback Topology</div>
+            <span style="font-size: 12px; color: var(--reactive-cyan);" id="track-badge">Track 1 Active</span>
+          </div>
+          <svg class="flow-svg" id="reactive-svg" viewBox="0 0 740 250"></svg>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">📥 Subscribed Origin-Chain LogRecord Input (`react(LogRecord calldata log)`)</div>
+          </div>
+          <pre id="log-record-view"></pre>
+        </div>
+      </div>
+
+      <div>
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">📤 Emitted Reactive Network `Callback` Event &amp; RVM Payload</div>
+          </div>
+          <pre id="callback-view"></pre>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">📜 Solidity Reactive Contract (`contracts/OmniPulseReactiveShield.sol`)</div>
+          </div>
+          <pre id="solidity-snippet"></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const TRACK_DATA = {
+      "T1": {
+        badge: "Track 1: Every Second Counts ($2,250)",
+        latency: "420ms",
+        buffer: "+2,264 bps",
+        regime: "Effective Threshold: 14,764 bps (1.476x) > Observed 13,800 bps",
+        originTitle: "Sepolia Lending Pool (Chain 11155111)",
+        originEvent: "CollateralHealthUpdated (1.38x)",
+        rvmAction: "react(log) -> ShieldTriggered",
+        destTitle: "Arbitrum Vault (Chain 42161)",
+        destCallback: "executeEmergencyCollateralTopUp($15,000)",
+        logRecord: {
+          chain_id: 11155111,
+          _contract: "0xSepoliaLendingMarket00000000000000000003",
+          topic_0: "0x8f4e2b91a7c3d6e0f112233445566778899aabbccddeeff00112233445566778",
+          topic_1: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+          data: {
+            observedHealthBps: 13800,
+            userFloorBps: 12500,
+            aiDynamicBufferBps: 2264,
+            effectiveThresholdBps: 14764,
+            debtUsd: 85000
+          },
+          block_number: 19482114
+        },
+        callbackEvent: {
+          event: "Callback(uint256 chain_id, address _contract, uint64 gas_limit, bytes payload)",
+          destination_chain_id: 42161,
+          destination_contract: "0x9988776655443322110099887766554433221100",
+          gas_limit: 450000,
+          function_signature: "executeEmergencyCollateralTopUp(address,address,uint256,uint256,uint256)",
+          rvm_id_placeholder_injected: "0x0000000000000000000000000000000000000000",
+          topUpAmountUsd: 15000,
+          reactionLatencyMs: 420
+        }
+      },
+      "T2": {
+        badge: "Track 2: Set It and Forget It ($2,250)",
+        latency: "460ms",
+        buffer: "+500 bps",
+        regime: "Regime: CALM_MARKET (2,500 bps) — Safe to Rebalance",
+        originTitle: "Base Yield Monitor (Chain 8453)",
+        originEvent: "YieldSpreadDetected (+245 bps APY)",
+        rvmAction: "react(log) -> AutonomousRebalance",
+        destTitle: "Arbitrum Morpho Vault (Chain 42161)",
+        destCallback: "executeAutonomousRebalance($50,000)",
+        logRecord: {
+          chain_id: 8453,
+          _contract: "0xBaseAaveYieldMonitor00000000000000000001",
+          topic_0: "0x5b1d9c44e2f8a1002233445566778899aabbccddeeff00112233445566778899",
+          topic_1: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+          data: {
+            candidateApyDeltaBps: 245,
+            userMinYieldDeltaBps: 180,
+            rebalanceAmountUsd: 50000,
+            targetPool: "0xArbMorphoUsdcVault0000000000000000000099"
+          },
+          block_number: 19482105
+        },
+        callbackEvent: {
+          event: "Callback(uint256 chain_id, address _contract, uint64 gas_limit, bytes payload)",
+          destination_chain_id: 42161,
+          destination_contract: "0x9988776655443322110099887766554433221100",
+          gas_limit: 450000,
+          function_signature: "executeAutonomousRebalance(address,address,address,uint256,uint256)",
+          rvm_id_placeholder_injected: "0x0000000000000000000000000000000000000000",
+          rebalanceAmountUsd: 50000,
+          netYieldGainBps: 245
+        }
+      },
+      "T3": {
+        badge: "Track 3: Reactive Meets AI ($1,000)",
+        latency: "380ms",
+        buffer: "+2,264 bps",
+        regime: "AI Oracle Signal: FLASH_CRASH_HIGH_RISK (9,054 / 10,000 bps)",
+        originTitle: "AI Volatility Oracle (Chain 11155111)",
+        originEvent: "AIRegimeSignal (9,054 bps Vol)",
+        rvmAction: "react(log) -> Update Dynamic Buffer",
+        destTitle: "Reactive VM State Updated",
+        destCallback: "Gated Unsafe Rebalances & Raised Shield Floor",
+        logRecord: {
+          chain_id: 11155111,
+          _contract: "0xReactiveAIOracle000000000000000000000007",
+          topic_0: "0xc3a9f701d4e6b21133445566778899aabbccddeeff0011223344556677889900",
+          topic_1: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+          data: {
+            realizedVol5mPct: 8.4,
+            orderbookDepthDropPct: 62.0,
+            perpFundingInversionBps: -95.0,
+            volatilityScoreBps: 9054,
+            recommendedBufferBps: 2264
+          },
+          block_number: 19482112
+        },
+        callbackEvent: {
+          event: "AIRiskRegimeUpdated(uint256 volatilityScoreBps, uint256 dynamicBufferBps, uint256 blockNumber)",
+          volatilityScoreBps: 9054,
+          dynamicBufferBps: 2264,
+          newEffectiveHealthThresholdBps: 14764,
+          unsafeYieldRebalancesGated: true
+        }
+      }
+    };
+
+    const SOLIDITY_EXCERPT = `function react(LogRecord calldata log) external override vmOnly {
+    if (log.topic_0 == TOPIC_AI_REGIME_SIGNAL) {
+        _handleAIRegimeUpdate(log);
+    } else if (log.topic_0 == TOPIC_COLLATERAL_HEALTH_UPDATED) {
+        _handleCollateralHealthEvent(log);
+    } else if (log.topic_0 == TOPIC_YIELD_SPREAD_DETECTED) {
+        _handleYieldSpreadEvent(log);
+    }
+}`;
+
+    function selectTrack(key) {
+      ["T1", "T2", "T3"].forEach(k => {
+        document.getElementById("btn-" + k.toLowerCase()).classList.toggle("active", k === key);
+      });
+      const d = TRACK_DATA[key];
+      document.getElementById("track-badge").textContent = d.badge;
+      document.getElementById("kpi-latency").textContent = d.latency;
+      document.getElementById("kpi-buffer").textContent = d.buffer;
+      document.getElementById("kpi-regime").textContent = d.regime;
+
+      document.getElementById("reactive-svg").innerHTML = `
+        <defs>
+          <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#06b6d4" />
+          </marker>
+        </defs>
+        <line x1="220" y1="125" x2="285" y2="125" stroke="#06b6d4" stroke-width="3" marker-end="url(#arr)" />
+        <line x1="465" y1="125" x2="525" y2="125" stroke="#10b981" stroke-width="3" marker-end="url(#arr)" />
+
+        <rect x="20" y="75" width="200" height="100" rx="12" fill="#0f2942" stroke="#06b6d4" stroke-width="2.5" />
+        <text x="34" y="105" fill="#67e8f9" font-size="11" font-weight="700">ORIGIN CHAIN EVENT</text>
+        <text x="34" y="128" fill="#ffffff" font-size="12.5" font-weight="800">${d.originTitle}</text>
+        <text x="34" y="150" fill="#bae6fd" font-size="11">${d.originEvent}</text>
+
+        <rect x="290" y="65" width="175" height="120" rx="12" fill="#1e1b4b" stroke="#8b5cf6" stroke-width="3" />
+        <text x="304" y="95" fill="#c4b5fd" font-size="11" font-weight="700">REACTIVE NETWORK VM</text>
+        <text x="304" y="120" fill="#ffffff" font-size="12.5" font-weight="800">OmniPulseReactiveShield</text>
+        <text x="304" y="145" fill="#ddd6fe" font-size="11">${d.rvmAction}</text>
+        <text x="304" y="168" fill="#34d399" font-size="11" font-weight="700">Latency: ${d.latency}</text>
+
+        <rect x="530" y="75" width="195" height="100" rx="12" fill="#0f291e" stroke="#10b981" stroke-width="2.5" />
+        <text x="544" y="105" fill="#6ee7b7" font-size="11" font-weight="700">DESTINATION CALLBACK</text>
+        <text x="544" y="128" fill="#ffffff" font-size="12.5" font-weight="800">${d.destTitle}</text>
+        <text x="544" y="150" fill="#a7f3d0" font-size="11">${d.destCallback}</text>
+      `;
+
+      document.getElementById("log-record-view").textContent = JSON.stringify(d.logRecord, null, 2);
+      document.getElementById("callback-view").textContent = JSON.stringify(d.callbackEvent, null, 2);
+      document.getElementById("solidity-snippet").textContent = SOLIDITY_EXCERPT;
+    }
+
+    selectTrack("T1");
+  </script>
+</body>
+</html>
