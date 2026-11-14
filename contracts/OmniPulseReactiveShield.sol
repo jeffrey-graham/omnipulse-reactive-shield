@@ -109,6 +109,9 @@ contract OmniPulseReactiveShield is AbstractReactive {
     }
 
     address public immutable owner;
+    address public immutable trustedLendingPool;
+    address public immutable trustedYieldOracle;
+    address public immutable trustedAIOracle;
     uint256 public totalEmergencyCallbacksEmitted;
     uint256 public totalYieldRebalancesEmitted;
     uint256 public totalAISignalsProcessed;
@@ -156,6 +159,9 @@ contract OmniPulseReactiveShield is AbstractReactive {
         address aiOracleContract
     ) AbstractReactive(_service, _vm) {
         owner = msg.sender;
+        trustedLendingPool = originLendingPool;
+        trustedYieldOracle = originYieldOracle;
+        trustedAIOracle = aiOracleContract;
         aiRiskState = AIRiskState({
             volatilityScoreBps: 2500,
             dynamicBufferBps: 500,
@@ -201,6 +207,7 @@ contract OmniPulseReactiveShield is AbstractReactive {
         uint256 minYieldDeltaBps,
         uint256 emergencyTopUpAmount
     ) external {
+        require(msg.sender == user || msg.sender == owner, "OmniPulse: unauthorized caller");
         require(user != address(0), "OmniPulse: invalid user");
         require(destinationVault != address(0), "OmniPulse: invalid vault");
         require(minHealthFactorBps >= 10500, "OmniPulse: health factor floor too low");
@@ -225,14 +232,25 @@ contract OmniPulseReactiveShield is AbstractReactive {
     }
 
     /**
+     * @notice Allows a user (or contract owner) to pause cross-chain callbacks for their policy.
+     */
+    function pausePolicy(address user) external {
+        require(msg.sender == user || msg.sender == owner, "OmniPulse: unauthorized caller");
+        policies[user].active = false;
+    }
+
+    /**
      * @notice Core Reactive VM entry point invoked automatically when subscribed cross-chain logs arrive.
      */
     function react(LogRecord calldata log) external override vmOnly {
         if (log.topic_0 == TOPIC_AI_REGIME_SIGNAL) {
+            require(trustedAIOracle == address(0) || log._contract == trustedAIOracle, "OmniPulse: untrusted AI oracle");
             _handleAIRegimeUpdate(log);
         } else if (log.topic_0 == TOPIC_COLLATERAL_HEALTH_UPDATED) {
+            require(trustedLendingPool == address(0) || log._contract == trustedLendingPool, "OmniPulse: untrusted lending pool");
             _handleCollateralHealthEvent(log);
         } else if (log.topic_0 == TOPIC_YIELD_SPREAD_DETECTED) {
+            require(trustedYieldOracle == address(0) || log._contract == trustedYieldOracle, "OmniPulse: untrusted yield oracle");
             _handleYieldSpreadEvent(log);
         }
     }

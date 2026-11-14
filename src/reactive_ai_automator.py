@@ -136,8 +136,19 @@ class OmniPulseReactiveEngine:
     the Reactive Network VM (`vmOnly` mode) and emitting cross-chain `Callback` events.
     """
 
-    def __init__(self, vm_mode: bool = True) -> None:
+    def __init__(
+        self,
+        vm_mode: bool = True,
+        owner: str = "0x1111111111111111111111111111111111111111",
+        trusted_lending_pool: str | None = None,
+        trusted_yield_oracle: str | None = None,
+        trusted_ai_oracle: str | None = None,
+    ) -> None:
         self.vm_mode = vm_mode
+        self.owner = owner.lower()
+        self.trusted_lending_pool = trusted_lending_pool.lower() if trusted_lending_pool else None
+        self.trusted_yield_oracle = trusted_yield_oracle.lower() if trusted_yield_oracle else None
+        self.trusted_ai_oracle = trusted_ai_oracle.lower() if trusted_ai_oracle else None
         self.ai_engine = AIRiskScoringEngine()
         self.ai_risk_state = AIRiskState()
         self.policies: dict[str, AutomationPolicy] = {}
@@ -146,20 +157,36 @@ class OmniPulseReactiveEngine:
         self.total_yield_rebalances = 0
         self.total_ai_signals = 0
 
-    def configure_policy(self, policy: AutomationPolicy) -> None:
+    def configure_policy(self, policy: AutomationPolicy, caller: str | None = None) -> None:
+        if caller is not None and caller.lower() not in (policy.user.lower(), self.owner):
+            raise PermissionError("OmniPulse: unauthorized caller")
         if policy.min_health_factor_bps < 10500:
             raise ValueError("OmniPulse: health factor floor too low (< 1.05x)")
         self.policies[policy.user.lower()] = policy
+
+    def pause_policy(self, user: str, caller: str | None = None) -> None:
+        if caller is not None and caller.lower() not in (user.lower(), self.owner):
+            raise PermissionError("OmniPulse: unauthorized caller")
+        existing = self.policies.get(user.lower())
+        if existing:
+            existing.active = False
 
     def react(self, log: LogRecord) -> CallbackEvent | dict[str, Any] | None:
         if not self.vm_mode:
             raise PermissionError("ReactiveNetwork: Reactive VM only (vmOnly modifier)")
 
+        log_contract = log.contract_address.lower()
         if log.topic_0 == TOPIC_AI_REGIME_SIGNAL:
+            if self.trusted_ai_oracle and log_contract != self.trusted_ai_oracle:
+                raise PermissionError("OmniPulse: untrusted AI oracle")
             return self._handle_ai_regime_update(log)
         if log.topic_0 == TOPIC_COLLATERAL_HEALTH_UPDATED:
+            if self.trusted_lending_pool and log_contract != self.trusted_lending_pool:
+                raise PermissionError("OmniPulse: untrusted lending pool")
             return self._handle_collateral_health_event(log)
         if log.topic_0 == TOPIC_YIELD_SPREAD_DETECTED:
+            if self.trusted_yield_oracle and log_contract != self.trusted_yield_oracle:
+                raise PermissionError("OmniPulse: untrusted yield oracle")
             return self._handle_yield_spread_event(log)
         return None
 

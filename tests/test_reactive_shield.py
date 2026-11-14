@@ -161,6 +161,37 @@ class TestOmniPulseReactiveShield(unittest.TestCase):
         self.assertEqual(sim["summaryMetrics"]["totalYieldRebalancesEmitted"], 1)
         self.assertEqual(sim["summaryMetrics"]["totalAISignalsProcessed"], 1)
 
+    def test_policy_access_control_and_trusted_origin_guards(self) -> None:
+        attacker = "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+        with self.assertRaises(PermissionError):
+            self.engine.configure_policy(
+                AutomationPolicy(
+                    user=self.user,
+                    destination_chain_id=42161,
+                    destination_vault=attacker,
+                    min_health_factor_bps=12500,
+                    min_yield_delta_bps=180,
+                    emergency_top_up_usd=15000,
+                ),
+                caller=attacker,
+            )
+
+        hardened = OmniPulseReactiveEngine(
+            vm_mode=True,
+            trusted_ai_oracle="0xAIOracle",
+            trusted_lending_pool="0xLendingPool",
+        )
+        with self.assertRaises(PermissionError):
+            hardened.react(
+                LogRecord(
+                    chain_id=11155111,
+                    contract_address=attacker,
+                    topic_0=TOPIC_AI_REGIME_SIGNAL,
+                    topic_1=self.user,
+                    data={"volatilityScoreBps": 9900, "recommendedBufferBps": 3500},
+                )
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
